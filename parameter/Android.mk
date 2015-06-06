@@ -189,36 +189,3 @@ LOCAL_LDLIBS += -ldl
 LOCAL_CLANG := false
 include $(BUILD_HOST_SHARED_LIBRARY)
 
-################################
-# Export includes for plugins (Target build)
-
-include $(CLEAR_VARS)
-
-LOCAL_MODULE := $(common_module)_includes
-LOCAL_MODULE_OWNER := intel
-
-LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)
-
-LOCAL_STATIC_LIBRARIES := \
-    libxmlserializer \
-    libpfw_utility \
-    libxml2
-
-include $(BUILD_STATIC_LIBRARY)
-
-################################
-# Export includes for plugins (Host build)
-
-include $(CLEAR_VARS)
-
-LOCAL_MODULE := $(common_module)_includes_host
-LOCAL_MODULE_OWNER := intel
-
-LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)
-
-LOCAL_STATIC_LIBRARIES := \
-    libxmlserializer_host \
-    libpfw_utility_host \
-    libxml2
-
-include $(BUILD_HOST_STATIC_LIBRARY)
