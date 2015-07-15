@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014, Intel Corporation
+ * Copyright (c) 2015, Intel Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
@@ -28,39 +28,53 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-#include "XmlDocSink.h"
-#include <string>
+#include "FullIo.hpp"
 
-/**
-  * Sink class that save the content of any CXmlDocSource into a file.
-  * The file path is defined in the constructor.
-  */
-class CXmlFileDocSink : public CXmlDocSink
+#include <cerrno>
+#include <unistd.h>
+
+namespace utility
 {
-public:
-    /**
-      * Constructor
-      *
-      * @param[in] strXmlInstanceFile defines the path used to save the file.
-      */
-    CXmlFileDocSink(const std::string& strXmlInstanceFile);
 
-private:
-    /**
-      * Implementation of CXmlDocSink::doProcess()
-      * Write the content of the xmlDocSource to the file opened in strXmlInstanceFile using
-      * UTF-8 encoding
-      *
-      * @param[in] xmlDocSource is the source containing the Xml document
-      * @param[out] serializingContext is used as error output
-      *
-      * @return false if any error occurs
-      */
-    virtual bool doProcess(CXmlDocSource& xmlDocSource, CXmlSerializingContext& serializingContext);
+/** Workaround c++ `void *` arithmetic interdiction. */
+template <class Ptr>
+Ptr *add(Ptr *ptr, size_t count) {
+    return (char *)ptr + count;
+}
 
-    /**
-      * Name of the instance file
-      */
-    std::string _strXmlInstanceFile;
-};
+template <class Buff>
+static bool fullAccess(ssize_t (&accessor)(int, Buff, size_t),
+                       bool (&accessFailed)(ssize_t),
+                       int fd, Buff buf, size_t count) {
+    size_t done = 0; // Bytes already access in previous iterations
+    while (done < count) {
+        ssize_t accessed = accessor(fd, add(buf, done), count - done);
+        if (accessFailed(accessed)) {
+            return false;
+        }
+        done += accessed;
+    }
+    return true;
+}
+
+static bool accessFailed(ssize_t accessRes) {
+    return accessRes == -1 and errno != EAGAIN and errno != EINTR;
+}
+
+bool fullWrite(int fd, const void *buf, size_t count) {
+    return fullAccess(::write, accessFailed, fd, buf, count);
+}
+
+static bool readFailed(ssize_t readRes) {
+    if (readRes == 0) { // read should not return 0 (EOF)
+        errno = 0;
+        return true;
+    }
+    return accessFailed(readRes);
+}
+bool fullRead(int fd, void *buf, size_t count) {
+    return fullAccess(::read, readFailed, fd, buf, count);
+}
+
+} // namespace utility
+

@@ -35,9 +35,10 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
-#include <sstream>
 
 using std::string;
+
+const std::string CElement::gDescriptionPropertyName = "Description";
 
 CElement::CElement(const string& strName) : _strName(strName), _pParent(NULL)
 {
@@ -49,14 +50,14 @@ CElement::~CElement()
 }
 
 // Logging
-void CElement::log_info(const string& strMessage, ...) const
+void CElement::log_info(const char* strMessage, ...) const
 {
     char *pacBuffer;
     va_list listPointer;
 
     va_start(listPointer, strMessage);
 
-    vasprintf(&pacBuffer,  strMessage.c_str(), listPointer);
+    vasprintf(&pacBuffer,  strMessage, listPointer);
 
     va_end(listPointer);
 
@@ -67,14 +68,14 @@ void CElement::log_info(const string& strMessage, ...) const
     free(pacBuffer);
 }
 
-void CElement::log_warning(const string& strMessage, ...) const
+void CElement::log_warning(const char* strMessage, ...) const
 {
     char *pacBuffer;
     va_list listPointer;
 
     va_start(listPointer, strMessage);
 
-    vasprintf(&pacBuffer,  strMessage.c_str(), listPointer);
+    vasprintf(&pacBuffer,  strMessage, listPointer);
 
     va_end(listPointer);
 
@@ -200,43 +201,14 @@ void CElement::showProperties(string& strResult) const
 {
     strResult = "\n";
     strResult += "Kind: " + getKind() + "\n";
+    showDescriptionProperty(strResult);
 }
 
-// Conversion utilities
-string CElement::toString(uint32_t uiValue)
+void CElement::showDescriptionProperty(std::string &strResult) const
 {
-    std::ostringstream ostr;
-
-    ostr << uiValue;
-
-    return ostr.str();
-}
-
-string CElement::toString(uint64_t uiValue)
-{
-    std::ostringstream ostr;
-
-    ostr << uiValue;
-
-    return ostr.str();
-}
-
-string CElement::toString(int32_t iValue)
-{
-    std::ostringstream ostr;
-
-    ostr << iValue;
-
-    return ostr.str();
-}
-
-string CElement::toString(double dValue)
-{
-    std::ostringstream ostr;
-
-    ostr << dValue;
-
-    return ostr.str();
+    if (!getDescription().empty()) {
+        strResult += gDescriptionPropertyName + ": " + getDescription() + "\n";
+    }
 }
 
 // Content dumping
@@ -249,6 +221,8 @@ void CElement::logValue(string& strValue, CErrorContext& errorContext) const
 // From IXmlSink
 bool CElement::fromXml(const CXmlElement& xmlElement, CXmlSerializingContext& serializingContext)
 {
+    setDescription(getXmlDescriptionAttribute(xmlElement));
+
     // Propagate through children
     CXmlElement::CChildIterator childIterator(xmlElement);
 
@@ -316,7 +290,21 @@ void CElement::childrenToXml(CXmlElement& xmlElement,
 void CElement::toXml(CXmlElement& xmlElement, CXmlSerializingContext& serializingContext) const
 {
     setXmlNameAttribute(xmlElement);
+    setXmlDescriptionAttribute(xmlElement);
     childrenToXml(xmlElement, serializingContext);
+}
+
+void CElement::setXmlDescriptionAttribute(CXmlElement& xmlElement) const
+{
+    const string &description = getDescription();
+    if (!description.empty()) {
+        xmlElement.setAttributeString(gDescriptionPropertyName, description);
+    }
+}
+
+string CElement::getXmlDescriptionAttribute(const CXmlElement& xmlElement) const
+{
+    return xmlElement.getAttributeString(gDescriptionPropertyName);
 }
 
 void CElement::setXmlNameAttribute(CXmlElement& xmlElement) const
@@ -711,18 +699,4 @@ uint8_t CElement::computeStructureChecksum() const
     }
 
     return uiChecksum;
-}
-
-// Utility to underline
-void CElement::appendTitle(string& strTo, const string& strTitle)
-{
-    strTo += "\n" + strTitle + "\n";
-
-    string::size_type uiLength = strTitle.size();
-
-    while (uiLength--) {
-
-        strTo += "=";
-    }
-    strTo += "\n";
 }

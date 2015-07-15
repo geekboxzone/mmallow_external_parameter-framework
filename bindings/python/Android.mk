@@ -38,26 +38,25 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := _PyPfw
 
 LOCAL_CPP_EXTENSION := .cxx
-# As long as the parameter-framework is compiled with gcc, we must avoid
-# compiling the bindings with clang and compile with gcc instead.
-LOCAL_CLANG := false
 # Android only provides a 32bit version of python.
 LOCAL_32_BIT_ONLY := true
 
-LOCAL_SHARED_LIBRARIES := libparameter_host
-LOCAL_STATIC_LIBRARIES := libxmlserializer_host
+LOCAL_SHARED_LIBRARIES := libxmlserializer_host libparameter_host
+
+# python is only available in 32bits for now, thus arch is forced to 32bits
+PYTHON_INSTALL_PATH := prebuilts/python/$(HOST_OS)-x86/2.7.5/
+PYTHON_INCLUDES_PATH := $(PYTHON_INSTALL_PATH)/include/python2.7
+PYTHON_BIN_PATH := $(PYTHON_INSTALL_PATH)/bin
 
 LOCAL_C_INCLUDES := \
-    prebuilts/python/$(HOST_PREBUILT_TAG)/2.7.5/include/python2.7 \
+    $(PYTHON_INCLUDES_PATH) \
     $(HOST_OUT_HEADERS)/parameter
 
-# The 'unused-but-set-variable' warning must be disabled because SWIG generates
-# files that do not respect that constraint.
 # '-DSWIG_PYTHON_SILENT_MEMLEAK' is needed because the "memleak" warning
 # pollutes the standard output. At the time of writing, the only warning is
 # spurious anyway, as it relates to "ILogger *" which is an abstract
 # class/interface class and as such cannot be destroyed.
-LOCAL_CFLAGS := -Wno-unused-but-set-variable -fexceptions -DSWIG_PYTHON_SILENT_MEMLEAK
+LOCAL_CFLAGS := -fexceptions -DSWIG_PYTHON_SILENT_MEMLEAK
 
 # Undefined symbols will be resolved at runtime
 LOCAL_ALLOW_UNDEFINED_SYMBOLS := true
@@ -73,6 +72,26 @@ generated-sources-dir := $(call local-generated-sources-dir)
 LOCAL_GENERATED_SOURCES := $(generated-sources-dir)/pfw_wrap.cxx $(generated-sources-dir)/pfw_wrap.h
 
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(generated-sources-dir)
+
+# Get the interpreter ld options.
+ifeq ($(HOST_OS), darwin)
+    # Contrary to linux, on darwin, a python 64 bit executable is installed
+    # in the x86 prebuild directory,
+    # As all host libraries are 32 bit in android. We can not link and host
+    # python module against the prebuild python library.
+    #
+    # As a *dirty* workaround, use the system's python configuration and hope
+    # it will be compatible with the prebuild python interpreter used at runtime.
+    # To summarize the prebuild python (64 bit?) interpreter will load a
+    # python native module (32bit) linked with the host (32 bit ?) python library.
+    LOCAL_LDLIBS += $(shell python-config --ldflags)
+else
+   # Careful, we need to invoke the android python config not the host's one.
+   # Unfortunately, the internal install directory of python is hardcoded to a dummy value,
+   # As a workaround, we need to manually add the correct path to libs to the library list.
+    LOCAL_LDLIBS += $(shell $(PYTHON_BIN_PATH)/python $(PYTHON_BIN_PATH)/python-config --ldflags) \
+                -L $(PYTHON_INSTALL_PATH)/lib/
+endif
 
 $(generated-sources-dir)/pfw_wrap.h: $(generated-sources-dir)/pfw_wrap.cxx
 

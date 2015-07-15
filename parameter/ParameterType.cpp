@@ -31,10 +31,13 @@
 #include "Parameter.h"
 #include "ArrayParameter.h"
 #include "ParameterAccessContext.h"
+#include "Utility.h"
 
 #define base CTypeElement
 
 using std::string;
+
+const std::string CParameterType::gUnitPropertyName = "Unit";
 
 CParameterType::CParameterType(const string& strName) : base(strName), _uiSize(0)
 {
@@ -68,13 +71,31 @@ string CParameterType::getUnit() const
     return _strUnit;
 }
 
+void CParameterType::setUnit(const std::string& strUnit)
+{
+    _strUnit = strUnit;
+}
+
 // From IXmlSink
 bool CParameterType::fromXml(const CXmlElement& xmlElement, CXmlSerializingContext& serializingContext)
 {
-    // Unit
-    _strUnit = xmlElement.getAttributeString("Unit");
-
+    setUnit(xmlElement.getAttributeString(gUnitPropertyName));
     return base::fromXml(xmlElement, serializingContext);
+}
+
+// From IXmlSource
+void CParameterType::toXml(CXmlElement& xmlElement, CXmlSerializingContext& serializingContext) const
+{
+    base::toXml(xmlElement, serializingContext);
+    setXmlUnitAttribute(xmlElement);
+}
+
+void CParameterType::setXmlUnitAttribute(CXmlElement& xmlElement) const
+{
+    const string& unit = getUnit();
+    if (!unit.empty()) {
+        xmlElement.setAttributeString(gUnitPropertyName, unit);
+    }
 }
 
 // XML Serialization value space handling
@@ -91,14 +112,13 @@ void CParameterType::showProperties(string& strResult) const
 {
     base::showProperties(strResult);
 
-    // Unit
-    if (!_strUnit.empty()) {
-
-        strResult += "Unit: " + _strUnit + "\n";
+    // Add Unit property if found
+    if (!getUnit().empty()) {
+        strResult += gUnitPropertyName + ": " + getUnit() + "\n";
     }
 
     // Scalar size
-    strResult += "Scalar size: " + toString(getSize()) + " byte(s) \n";
+    strResult += "Scalar size: " + CUtility::toString(getSize()) + " byte(s) \n";
 }
 
 // Default value handling (simulation only)

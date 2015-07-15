@@ -126,15 +126,12 @@ common_cflags := \
         -Werror \
         -Wextra \
         -Wno-unused-parameter \
-        -Wno-maybe-uninitialized \
+        -Wno-maybe-uninitialized
 
 common_c_includes := \
     $(LOCAL_PATH)/include/ \
     $(LOCAL_PATH)/../utility/ \
-    $(LOCAL_PATH)/../xmlserializer/ \
     $(LOCAL_PATH)/../remote-processor/
-
-common_shared_libraries := libicuuc
 
 #############################
 # Target build
@@ -143,6 +140,8 @@ include $(CLEAR_VARS)
 
 LOCAL_COPY_HEADERS_TO := $(common_copy_headers_to)
 LOCAL_COPY_HEADERS := $(common_copy_headers)
+
+LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)
 
 LOCAL_CFLAGS := $(common_cflags)
 
@@ -154,12 +153,11 @@ LOCAL_MODULE_TAGS := $(common_module_tags)
 
 LOCAL_C_INCLUDES := $(common_c_includes)
 
-LOCAL_SHARED_LIBRARIES := $(common_shared_libraries) libdl
-LOCAL_STATIC_LIBRARIES := libxmlserializer libpfw_utility libxml2
+LOCAL_SHARED_LIBRARIES := libxmlserializer libdl
+LOCAL_STATIC_LIBRARIES := libpfw_utility
 
 LOCAL_REQUIRED_MODULES := libremote-processor
 
-LOCAL_CLANG := false
 include $(BUILD_SHARED_LIBRARY)
 
 ##############################
@@ -169,6 +167,8 @@ include $(CLEAR_VARS)
 
 LOCAL_COPY_HEADERS_TO := $(common_copy_headers_to)
 LOCAL_COPY_HEADERS := $(common_copy_headers)
+
+LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)
 
 LOCAL_CFLAGS := $(common_cflags) -O0 -ggdb
 
@@ -181,11 +181,9 @@ LOCAL_MODULE_TAGS := $(common_module_tags)
 LOCAL_C_INCLUDES += \
     $(common_c_includes)
 
-LOCAL_SHARED_LIBRARIES := $(common_shared_libraries)-host
-LOCAL_STATIC_LIBRARIES := libxmlserializer_host libpfw_utility_host libxml2
+LOCAL_SHARED_LIBRARIES := libxmlserializer_host
+LOCAL_STATIC_LIBRARIES := libpfw_utility_host libxml2
 
 LOCAL_LDLIBS += -ldl
 
-LOCAL_CLANG := false
 include $(BUILD_HOST_SHARED_LIBRARY)
-

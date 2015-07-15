@@ -36,6 +36,11 @@ endif(COMMAND cmake_policy)
 
 project(parameter-framework)
 
+# find and set the Parameter Framework's version
+execute_process(COMMAND git describe --tags --dirty
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+    OUTPUT_VARIABLE PARAMETER_FRAMEWORK_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall -Wextra")
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -67,3 +72,5 @@ add_subdirectory(tools/xmlGenerator)
 add_subdirectory(tools/xmlValidator)
 
 add_subdirectory(bindings)
+
+add_subdirectory(doc)

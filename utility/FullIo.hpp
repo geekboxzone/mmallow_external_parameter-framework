@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014, Intel Corporation
+ * Copyright (c) 2015, Intel Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
@@ -29,37 +29,40 @@
  */
 
 #pragma once
-#include <string>
-#include "XmlDocSink.h"
-#include "XmlSource.h"
 
-/**
-  * Sink class that writes the content of any CXmlDocSource into a std::string.
-  * A reference to an empty std::string is given in the constructor.
-  */
-class CXmlStringDocSink : public CXmlDocSink
+#include <cstddef>
+
+namespace utility
 {
-public:
-    /** Constructor
-      *
-      * @param[out] strResult a reference to a std::string that will be filled by the doProcess method
-      */
-    CXmlStringDocSink(std::string& strResult);
 
-private:
-    /** Implementation of CXmlDocSink::doProcess()
-      * Writes the content of the xmlDocSource in strResult
-      *
-      * @param[in] xmlDocSource is the source containing the Xml document
-      * @param[out] serializingContext is used as error output
-      *
-      * @return false if any error occurs
-      */
-    virtual bool doProcess(CXmlDocSource& xmlDocSource, CXmlSerializingContext& serializingContext);
+/** Write *completely* a buffer in a file descriptor.
+ *
+ * A wrapper around unistd::write that resumes write on incomplete access
+ * and EAGAIN/EINTR error.
+ *
+ * @see man 2 write for the parameters.
+ *
+ * @return true if the buffer could be completely written,
+ *        false on failure (see write's man errno section).
+ */
+bool fullWrite(int fd, const void *buf, size_t count);
 
-    /**
-      * Result std::string containing the XML informations
-      */
-    std::string& _strResult;
-};
+/** Fill a buffer from a file descriptor.
+ *
+ * A wrapper around unistd::read that resumes read on incomplete access
+ * and EAGAIN/EINTR error.
+ *
+ * @see man 2 read for the parameters.
+ *
+ * @return true if the buffer could be completely fill,
+ *        false on failure (see read's man errno section).
+ *
+ * If the buffer could not be filled due to an EOF, return false but set
+ * errno to 0.
+ * @TODO Add a custom strerror to prevent logging "success" (`sterror(0)`) on
+ *       EOF errors ?
+ */
+bool fullRead(int fd, void *buf, size_t count);
+
+} // namespace utility
 

@@ -35,6 +35,7 @@
 #include "ConfigurationAccessContext.h"
 #include "SubsystemObjectCreator.h"
 #include "MappingData.h"
+#include "Utility.h"
 #include <assert.h>
 #include <sstream>
 
@@ -104,6 +105,10 @@ bool CSubsystem::needResync(bool bClear)
 // From IXmlSink
 bool CSubsystem::fromXml(const CXmlElement& xmlElement, CXmlSerializingContext& serializingContext)
 {
+    // Subsystem class does not rely on generic fromXml algorithm of Element class.
+    // So, setting here the description if found as XML attribute.
+    setDescription(getXmlDescriptionAttribute(xmlElement));
+
     // Context
     CXmlParameterSerializingContext& parameterBuildContext = static_cast<CXmlParameterSerializingContext&>(serializingContext);
 
@@ -440,7 +445,8 @@ bool CSubsystem::handleSubsystemObjectCreation(
                 pSubsystemObjectCreator->getMaxConfigurableElementSize()) {
 
                 string strSizeError = "Size should not exceed " +
-                                      toString(pSubsystemObjectCreator->getMaxConfigurableElementSize());
+                                      CUtility::toString(
+                                        pSubsystemObjectCreator->getMaxConfigurableElementSize());
 
                 strError = getMappingError(strKey, strSizeError, pInstanceConfigurableElement);
 

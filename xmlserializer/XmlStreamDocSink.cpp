@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014, Intel Corporation
+ * Copyright (c) 2015, Intel Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
@@ -27,28 +27,34 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-#include "XmlStringDocSource.h"
+#include "XmlStreamDocSink.h"
 #include <libxml/parser.h>
 
-#define base CXmlDocSource
+#define base CXmlDocSink
 
-CXmlStringDocSource::CXmlStringDocSource(const std::string& strXmlInput,
-                                         const std::string& strXmlSchemaFile,
-                                         const std::string& strRootElementType,
-                                         const std::string& strRootElementName,
-                                         const std::string& strNameAttrituteName,
-                                         bool bValidateWithSchema) :
-    base(xmlReadMemory(strXmlInput.c_str(), (int)strXmlInput.size(), "", NULL, 0),
-         strXmlSchemaFile,
-         strRootElementType,
-         strRootElementName,
-         strNameAttrituteName,
-         bValidateWithSchema)
+CXmlStreamDocSink::CXmlStreamDocSink(std::ostream& output):
+    _output(output)
 {
 }
 
-bool CXmlStringDocSource::populate(CXmlSerializingContext &serializingContext)
+bool CXmlStreamDocSink::doProcess(CXmlDocSource& xmlDocSource,
+                                  CXmlSerializingContext& serializingContext)
 {
-    return validate(serializingContext);
+    xmlChar* dumpedDoc = NULL;
+
+    int iSize;
+    xmlDocDumpFormatMemoryEnc(xmlDocSource.getDoc(), &dumpedDoc, &iSize, "UTF-8", 1);
+
+    if (!dumpedDoc) {
+
+        serializingContext.setError("Unable to encode XML document in memory");
+
+        return false;
+    }
+
+    _output << static_cast<unsigned char*>(dumpedDoc);
+
+    xmlFree(dumpedDoc);
+
+    return true;
 }

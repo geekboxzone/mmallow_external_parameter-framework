@@ -1,4 +1,4 @@
-# Copyright (c) 2011-2014, Intel Corporation
+# Copyright (c) 2015, Intel Corporation
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
@@ -26,68 +26,35 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-LOCAL_PATH := $(call my-dir)
 
-####################
-# Common definitions
+option(DOXYGEN
+       "Enable doxygen generation (you still have to run 'make doc')"
+       OFF)
 
-common_src_files := \
-        main.cpp
+include(CMakeDependentOption)
+# Only present DOXYGEN_GRAPHS if DOXYGEN is ON and if so, default to ON.
+# Else, set to OFF.
+cmake_dependent_option(DOXYGEN_GRAPHS
+       "Generate graphs in the doxygen documentation (you need the 'dot'
+       utility)"
+       ON
+       "DOXYGEN" OFF)
 
-common_module := remote-process
-common_module_tags := optional
+if(DOXYGEN)
+    find_package(Doxygen REQUIRED)
 
-common_cflags := \
-        -Wall \
-        -Werror \
-        -Wextra \
-        -Wno-unused-parameter
+    if(DOXYGEN_GRAPHS AND (NOT DOXYGEN_DOT_FOUND))
+        message(SEND_ERROR "
+        The 'dot' utility was  not found;"
+        " install it or deactivate graph generation (DOXYGEN_GRAPHS=OFF).")
+    endif()
 
-common_c_includes := \
-    $(LOCAL_PATH)/../remote-processor/
-
-common_shared_libraries := libremote-processor
-common_static_libraries := libpfw_utility
-
-#############################
-# Target build
-
-include $(CLEAR_VARS)
-
-LOCAL_SRC_FILES := $(common_src_files)
-
-LOCAL_MODULE := $(common_module)
-LOCAL_MODULE_OWNER := intel
-LOCAL_MODULE_TAGS := $(common_module_tags)
-
-LOCAL_CFLAGS := $(common_cflags)
-
-LOCAL_C_INCLUDES := $(common_c_includes)
-
-LOCAL_SHARED_LIBRARIES := $(common_shared_libraries)
-LOCAL_STATIC_LIBRARIES := $(common_static_libraries)
-
-include $(BUILD_EXECUTABLE)
-
-##############################
-# Host build
-
-include $(CLEAR_VARS)
-
-LOCAL_SRC_FILES := $(common_src_files)
-
-LOCAL_MODULE := $(common_module)_host
-LOCAL_MODULE_OWNER := intel
-LOCAL_MODULE_TAGS := $(common_module_tags)
-
-LOCAL_CFLAGS := $(common_cflags)
-
-LOCAL_C_INCLUDES += \
-    $(common_c_includes)
-
-LOCAL_SHARED_LIBRARIES := $(foreach shared_library, $(common_shared_libraries), \
-    $(shared_library)_host)
-LOCAL_STATIC_LIBRARIES := $(foreach static_library, $(common_static_libraries), \
-    $(static_library)_host)
-
-include $(BUILD_HOST_EXECUTABLE)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in
+       ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+       @ONLY)
+    add_custom_target(doc
+        ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        COMMENT "Generating documentation with Doxygen"
+        VERBATIM)
+endif()

@@ -49,8 +49,8 @@ public:
     virtual ~CElement();
 
     // Logging
-    void log_info(const std::string& strMessage, ...) const;
-    void log_warning(const std::string& strMessage, ...) const;
+    void log_info(const char* strMessage, ...) const;
+    void log_warning(const char* strMessage, ...) const;
     void log_table(bool bIsWarning, const std::list<std::string> lstrMessage) const;
 
     // Description
@@ -133,22 +133,38 @@ public:
     // Element properties
     virtual void showProperties(std::string& strResult) const;
 
-    // Conversion utilities
-    static std::string toString(uint32_t uiValue);
-    static std::string toString(uint64_t uiValue);
-    static std::string toString(int32_t iValue);
-    static std::string toString(double dValue);
-
     // Checksum for integrity checks
     uint8_t computeStructureChecksum() const;
 
     // Class kind
     virtual std::string getKind() const = 0;
+
+    /**
+     * Fill the Description field of the Xml Element during XML composing.
+     *
+     * @param[in,out] xmlElement to fill with the description
+     */
+    void setXmlDescriptionAttribute(CXmlElement& xmlElement) const;
+
+    /**
+     * Extract the Description field from the Xml Element during XML decomposing.
+     *
+     * @param[in] xmlElement to extract the description from.
+     *
+     * @return description represented as a string, empty if not found
+     */
+    std::string getXmlDescriptionAttribute(const CXmlElement &xmlElement) const;
+
+    /**
+     * Appends if found human readable description property.
+     *
+     * @param[out] strResult in which the description is wished to be appended.
+     */
+    void showDescriptionProperty(std::string &strResult) const;
+
 protected:
     // Content dumping
     virtual void logValue(std::string& strValue, CErrorContext& errorContext) const;
-    // Utility to underline
-    static void appendTitle(std::string& strTo, const std::string& strTitle);
 
     // Hierarchy
     CElement* getParent();
@@ -193,4 +209,6 @@ private:
     std::vector<CElement*> _childArray;
     // Parent
     CElement* _pParent;
+
+    static const std::string gDescriptionPropertyName;
 };
